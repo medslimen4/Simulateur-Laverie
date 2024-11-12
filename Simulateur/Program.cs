@@ -3,28 +3,19 @@ using Simulateur.Business;
 using Simulateur.Domain.Services;
 using Simulateur.Infrastructure;
 
-class Program
+public class Program
 {
-    static async Task Main(string[] args)
+    public static async Task Main(string[] args)
     {
-        // Configuration des services
-        var services = new ServiceCollection();
-        services.AddHttpClient();
-        services.AddScoped<IDataServices, DataServices>();
-        services.AddScoped<InitConfig>();
+        HttpClient httpClient = new HttpClient();
+        DataService dataService = new DataService(httpClient);
 
-        var serviceProvider = services.BuildServiceProvider();
+        // Initialisation de InitConfig et récupération de la configuration
+        InitConfig initConfig = new InitConfig(dataService);
+        SimulationConfig config = await initConfig.InitializeConfigurationAsync();
 
-        // Initialisation des données
-        var initConfig = serviceProvider.GetRequiredService<InitConfig>();
-        var proprietaires = await initConfig.InitialiserDonnees();
-
-        // Création du gestionnaire de laverie
-        var gestionLaverie = new GererLaverie(proprietaires);
-
-        // Simulation
-        gestionLaverie.SimulerFonctionnementLaverie();
-
-        gestionLaverie.SimulerCycle(1, 1); // Simuler le cycle 1 sur la machine 1
+        // Initialisation de GererLaverie et démarrage de la simulation
+        GererLaverie gererLaverie = new GererLaverie(config);
+        await gererLaverie.StartSimulationAsync();
     }
 }

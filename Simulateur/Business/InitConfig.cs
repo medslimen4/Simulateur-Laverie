@@ -1,5 +1,6 @@
 ﻿using LaverieEntities.Entities;
 using Simulateur.Domain.Services;
+using Simulateur.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,37 +11,59 @@ namespace Simulateur.Business
 {
     public class InitConfig
     {
-        private readonly IDataServices _dataServices;
+        private readonly DataService _dataService;
 
-        public InitConfig(IDataServices dataServices)
+        // Injecter DataService pour récupérer les données dans la couche Infrastructure
+        public InitConfig(DataService dataService)
         {
-            _dataServices = dataServices;
+            _dataService = dataService;
         }
 
-        public async Task<List<Proprietaire>> InitialiserDonnees()
+        // Configurer les entités pour la simulation de laverie
+        public async Task<SimulationConfig> InitializeConfigurationAsync()
         {
-            try
+            // Récupérer les données de l'API
+            LaverieData laverieData = await _dataService.GetLaverieDataAsync();
+
+            // Configurer les relations entre les entités
+            foreach (var laverie in laverieData.Laveries)
             {
-                var proprietaires = await _dataServices.GetProprietairesAsync();
-                foreach (var prop in proprietaires)
+                // Associer chaque machine à sa laverie et chaque cycle à sa machine
+                laverie.machinesLaverie = laverieData.Machines.FindAll(m => m.IDLaverie == laverie.IdLaverie);
+
+                foreach (var machine in laverie.machinesLaverie)
                 {
-                    prop.propLaverie = await _dataServices.GetLaveriesForProprietaireAsync(prop._CIN);
-                    foreach (var laverie in prop.propLaverie)
-                    {
-                        laverie.machinesLaverie = await _dataServices.GetMachinesForLaverieAsync(laverie.IdLaverie);
-                        foreach (var machine in laverie.machinesLaverie)
-                        {
-                            machine.cyclesMachine = await _dataServices.GetCyclesForMachineAsync(machine.IdMachine);
-                        }
-                    }
+                    machine.cyclesMachine = laverieData.Cycles.FindAll(c => c.IdMachine == machine.IdMachine);
+                    machine.Laverie = laverie;
                 }
-                return proprietaires;
+
+                // Associer chaque laverie à son propriétaire
+                var proprietaire = laverieData.Proprietaires.Find(p => p._CIN == laverie.ProprietaireCIN);
+                if (proprietaire != null)
+                {
+                    laverie.Proprietaire = proprietaire;
+                    proprietaire.propLaverie.Add(laverie);
+                }
             }
-            catch (Exception ex)
+
+            // Créer la configuration pour la simulation
+            SimulationConfig config = new SimulationConfig
             {
-                Console.WriteLine($"Erreur lors de l'initialisation des données: {ex.Message}");
-                return new List<Proprietaire>();
-            }
+                Proprietaires = laverieData.Proprietaires,
+                Laveries = laverieData.Laveries,
+                Machines = laverieData.Machines,
+                Cycles = laverieData.Cycles
+            };
+
+            return config;
         }
+    }
+
+    public class SimulationConfig
+    {
+        public List<Proprietaire> Proprietaires { get; set; }
+        public List<Laveries> Laveries { get; set; }
+        public List<Machine> Machines { get; set; }
+        public List<Cycle> Cycles { get; set; }
     }
 }

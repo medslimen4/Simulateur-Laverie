@@ -6,45 +6,24 @@ using Simulateur.Domain.Services;
 namespace Simulateur.Infrastructure
 {
 
-    public class DataServices : IDataServices
+
+    public class DataService : IDataService
     {
         private readonly HttpClient _httpClient;
-        private readonly string _baseUrl = "api_url";
 
-        public DataServices(HttpClient httpClient)
+        public DataService(HttpClient httpClient)
         {
             _httpClient = httpClient;
         }
 
-        public async Task<List<Proprietaire>> GetProprietairesAsync()
+        public async Task<LaverieData> GetLaverieDataAsync()
         {
-            var response = await _httpClient.GetAsync($"{_baseUrl}/proprietaires");
-            var content = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<List<Proprietaire>>(content);
+            var response = await _httpClient.GetAsync("url_de_lapi");
+            response.EnsureSuccessStatusCode();
+
+            var jsonData = await response.Content.ReadAsStringAsync();
+            return JsonConvert.DeserializeObject<LaverieData>(jsonData);
         }
-
-        public async Task<List<Laveries>> GetLaveriesForProprietaireAsync(int cin)
-        {
-            var response = await _httpClient.GetAsync($"{_baseUrl}/proprietaires/{cin}/laveries");
-            var content = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<List<Laveries>>(content);
-        }
-
-        public async Task<List<Machine>> GetMachinesForLaverieAsync(int idLaverie)
-        {
-            var response = await _httpClient.GetAsync($"{_baseUrl}/laveries/{idLaverie}/machines");
-            var content = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<List<Machine>>(content);
-        }
-
-        public async Task<List<Cycle>> GetCyclesForMachineAsync(int idMachine)
-        {
-            var response = await _httpClient.GetAsync($"{_baseUrl}/machines/{idMachine}/cycles");
-            var content = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<List<Cycle>>(content);
-        }
-
-
     }
 }
 

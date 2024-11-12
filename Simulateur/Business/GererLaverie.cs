@@ -1,64 +1,64 @@
-﻿using LaverieEntities.Entities;
-
+﻿using System.Threading.Tasks;
+using LaverieEntities.Entities;
+using System.Collections.Generic;
 
 namespace Simulateur.Business
 {
     public class GererLaverie
     {
-        private readonly List<Proprietaire> _proprietaires;
+        private readonly SimulationConfig _config;
 
-        public GererLaverie(List<Proprietaire> proprietaires)
+        // Constructeur avec injection de la configuration de simulation
+        public GererLaverie(SimulationConfig config)
         {
-            _proprietaires = proprietaires;
+            _config = config;
         }
 
-        public void SimulerFonctionnementLaverie()
+        // Méthode pour démarrer la simulation de la laverie
+        public async Task StartSimulationAsync()
         {
-            foreach (var proprietaire in _proprietaires)
+            // Appliquer les règles métier sur les laveries et machines
+            foreach (var laverie in _config.Laveries)
             {
-                Console.WriteLine($"Propriétaire: {proprietaire._Surname} (CIN: {proprietaire._CIN})");
+                // Logique métier pour chaque laverie
+                ProcessLaverie(laverie);
+            }
 
-                foreach (var laverie in proprietaire.propLaverie)
-                {
-                    Console.WriteLine($"\tLaverie: {laverie.AddresseLaverie} (Capacité: {laverie.CapaciteLaverie})");
-
-                    foreach (var machine in laverie.machinesLaverie)
-                    {
-                        Console.WriteLine($"\t\tMachine: {machine.MarqueMachine} (État: {machine.EtatMachine})");
-
-                        foreach (var cycle in machine.cyclesMachine)
-                        {
-                            Console.WriteLine($"\t\t\tCycle: {cycle.NomCycle} - {cycle.DureeCycleHR}h - {cycle.coutCycle}€");
-                        }
-                    }
-                }
+            // Simuler d'autres aspects de la laverie
+            foreach (var machine in _config.Machines)
+            {
+                ProcessMachine(machine);
             }
         }
 
-        public void SimulerCycle(int idMachine, int idCycle)
+        private void ProcessLaverie(Laveries laverie)
         {
-            var machine = _proprietaires
-                .SelectMany(p => p.propLaverie)
-                .SelectMany(l => l.machinesLaverie)
-                .FirstOrDefault(m => m.IdMachine == idMachine);
+            // Exemple : Calculer la capacité utilisée de la laverie
+            Console.WriteLine($"Simuler la laverie {laverie.IdLaverie} avec la capacité {laverie.CapaciteLaverie}");
 
-            if (machine == null)
+            foreach (var machine in laverie.machinesLaverie)
             {
-                Console.WriteLine("Machine non trouvée");
-                return;
+                // Traitement des machines de la laverie
+                ProcessMachine(machine);
             }
+        }
 
-            var cycle = machine.cyclesMachine.FirstOrDefault(c => c.IdCycle == idCycle);
-            if (cycle == null)
+        private void ProcessMachine(Machine machine)
+        {
+            // Exemple : Vérification de l'état de la machine et gestion des cycles
+            Console.WriteLine($"- Machine {machine.IdMachine} ({machine.MarqueMachine})");
+
+            foreach (var cycle in machine.cyclesMachine)
             {
-                Console.WriteLine("Cycle non trouvé");
-                return;
+                // Simuler les cycles de la machine
+                ProcessCycle(cycle);
             }
+        }
 
-            Console.WriteLine($"Démarrage du cycle {cycle.NomCycle} sur la machine {machine.MarqueMachine}");
-            Console.WriteLine($"Durée estimée: {cycle.DureeCycleHR} heures");
-            Console.WriteLine($"Coût: {cycle.coutCycle}€");
+        private void ProcessCycle(Cycle cycle)
+        {
+            // Exemple : Calculer le coût total, la durée, etc.
+            Console.WriteLine($"  - Cycle {cycle.IdCycle}: {cycle.NomCycle} ({cycle.DureeCycleHR} heures, {cycle.coutCycle}€)");
         }
     }
-
 }
